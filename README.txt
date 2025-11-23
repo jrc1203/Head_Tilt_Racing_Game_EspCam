@@ -34,6 +34,15 @@ QUICK START GUIDE
    - Open that link in Chrome/Edge on your laptop.
    - Allow Camera permissions and start racing!
 
+TESTING WITHOUT ESP32 (WEBCAM MODE)
+-----------------------------------
+If you don't have the ESP32-CAM handy, you can still test the game logic:
+1. Open `index.html` directly in your browser (or serve it with `python -m http.server`).
+2. Click the "Use Webcam" button.
+3. Allow camera permissions.
+4. The game will use your laptop's webcam instead of the ESP32 stream.
+
+
 HOW TO PLAY
 -----------
 - The game uses the camera to track your head.
