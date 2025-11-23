@@ -180,12 +180,21 @@ const char *html_page = R"rawliteral(
 
     </div>
 
+    <!-- SKELETON VIEW PANEL (Initially Hidden) -->
+    <div id="skeleton-panel" class="panel" style="margin-top: 20px; display:none;">
+        <h2>Skeleton / Face Mesh View</h2>
+        <div class="canvas-wrapper">
+            <canvas id="skeletonCanvas" width="640" height="480"></canvas>
+        </div>
+    </div>
+
     <div class="controls">
         <label>
             Camera IP: <input type="text" id="cam-ip" value="" placeholder="e.g. 192.168.1.100" style="width: 120px;">
         </label>
         <button id="webcam-btn" onclick="toggleWebcam()">Use Webcam</button>
         <button id="invert-btn" onclick="toggleInvert()" style="background:#ff5500;">Invert Steering: OFF</button>
+        <button id="skeleton-btn" onclick="toggleSkeleton()">Show Skeleton</button>
         <label>
             Sensitivity: <input type="range" id="sensitivity" min="2" max="20" value="8"> <span id="sens-val">8&deg;</span>
         </label>
@@ -213,6 +222,7 @@ const char *html_page = R"rawliteral(
         let score = 0;
         let gameLoopId;
         let invertSteering = false;
+        let showSkeleton = false;
         
         // Webcam State
         let useWebcam = false;
@@ -236,6 +246,11 @@ const char *html_page = R"rawliteral(
         
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
+
+        const skeletonPanel = document.getElementById('skeleton-panel');
+        const skeletonCanvas = document.getElementById('skeletonCanvas');
+        const skeletonCtx = skeletonCanvas.getContext('2d');
+        const skeletonBtn = document.getElementById('skeleton-btn');
 
         const statusTitle = document.getElementById('status-title');
         const statusText = document.getElementById('status-text');
@@ -319,6 +334,12 @@ const char *html_page = R"rawliteral(
             invertBtn.style.color = invertSteering ? "#000" : "#fff";
         }
 
+        function toggleSkeleton() {
+            showSkeleton = !showSkeleton;
+            skeletonPanel.style.display = showSkeleton ? "flex" : "none";
+            skeletonBtn.innerText = showSkeleton ? "Hide Skeleton" : "Show Skeleton";
+        }
+
         // ==========================================
         // GAME LOOP
         // ==========================================
@@ -347,12 +368,42 @@ const char *html_page = R"rawliteral(
                 
                 // Face Detection
                 const predictions = await model.estimateFaces({ input: inputImage });
+                
                 if (predictions.length > 0) {
                     const keypoints = predictions[0].scaledMesh;
                     processHeadTilt(keypoints);
                     drawFaceMesh(videoCtx, keypoints);
+                    
+                    // Draw Skeleton if enabled
+                    if (showSkeleton) {
+                        drawSkeleton(keypoints);
+                    }
+                } else {
+                    // No Face Detected Warning
+                    videoCtx.restore(); // Restore first to draw text normally
+                    videoCtx.save(); // Save again if needed, or just draw
+                    
+                    videoCtx.fillStyle = "red";
+                    videoCtx.font = "bold 24px Arial";
+                    videoCtx.fillText("NO FACE DETECTED", 20, 60);
+                    
+                    // Clear skeleton if no face
+                    if (showSkeleton) {
+                        skeletonCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+                        skeletonCtx.fillStyle = "#111";
+                        skeletonCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+                        skeletonCtx.fillStyle = "#555";
+                        skeletonCtx.fillText("No Face Detected", 20, 40);
+                    }
                 }
-                videoCtx.restore();
+                
+                // Restore context if we didn't already
+                if (predictions.length > 0) {
+                    videoCtx.restore();
+                } else {
+                    videoCtx.restore();
+                }
+                
             } else {
                 videoCtx.fillStyle = "#222";
                 videoCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
@@ -362,10 +413,8 @@ const char *html_page = R"rawliteral(
             }
 
             // 3. Render Game (Right Panel)
-            // Always clear with asphalt color
             gameCtx.fillStyle = "#333"; 
             gameCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-            
             drawGameWorld(gameCtx);
 
             // 4. Update Logic
@@ -460,6 +509,38 @@ const char *html_page = R"rawliteral(
                  ctx.fillText("TRACKING ACTIVE", 20, 30);
             }
             ctx.restore();
+        }
+
+        function drawSkeleton(keypoints) {
+            skeletonCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+            skeletonCtx.fillStyle = "#000";
+            skeletonCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            
+            skeletonCtx.save();
+            if (useWebcam) {
+                skeletonCtx.translate(CANVAS_W, 0);
+                skeletonCtx.scale(-1, 1);
+            }
+            
+            // Draw all points as a point cloud
+            skeletonCtx.fillStyle = "#00ffcc";
+            for (let i = 0; i < keypoints.length; i++) {
+                const p = keypoints[i];
+                skeletonCtx.beginPath();
+                skeletonCtx.arc(p[0], p[1], 2, 0, 2 * Math.PI);
+                skeletonCtx.fill();
+            }
+            
+            // Highlight Eyes
+            skeletonCtx.fillStyle = "#ff0000";
+            [133, 263].forEach(id => {
+                const p = keypoints[id];
+                skeletonCtx.beginPath();
+                skeletonCtx.arc(p[0], p[1], 6, 0, 2 * Math.PI);
+                skeletonCtx.fill();
+            });
+            
+            skeletonCtx.restore();
         }
 
         function drawGameWorld(ctx) {
