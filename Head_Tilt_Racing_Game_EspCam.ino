@@ -1,21 +1,3 @@
-/*
- * Project: Head-Tilt Racing Game (Embedded Version)
- * Author: Antigravity (Google DeepMind)
- * Date: 2025-11-23
- *
- * Description:
- * This sketch turns the ESP32-CAM into a Game Server.
- * 1. Connects to your WiFi (Hotspot).
- * 2. Serves the Game HTML at http://<IP>/
- * 3. Serves Video Snapshots at http://<IP>/capture
- *
- * INSTRUCTIONS:
- * 1. Edit 'ssid' and 'password' below to match your Laptop Hotspot or WiFi.
- * 2. Upload to ESP32-CAM.
- * 3. Open Serial Monitor (115200) to see the IP address.
- * 4. Open that IP in your browser.
- */
-
 #include "esp_camera.h"
 #include "web_index.h" // Contains the HTML game code
 #include <WebServer.h>
