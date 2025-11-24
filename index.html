@@ -11,16 +11,47 @@
         src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@0.0.3/dist/face-landmarks-detection.js"></script>
 
     <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg-color: #111;
+            --text-color: #fff;
+            --panel-bg: #222;
+            --panel-border: #444;
+            --panel-shadow: rgba(0, 0, 0, 0.5);
+            --accent-color: #00d2ff;
+            --accent-hover: #33e0ff;
+            --secondary-text: #ccc;
+            --input-bg: #333;
+            --input-border: #555;
+            --canvas-bg: #000;
+        }
+
+        .light-mode {
+            /* Light Mode */
+            --bg-color: #f0f2f5;
+            --text-color: #111;
+            --panel-bg: #fff;
+            --panel-border: #ddd;
+            --panel-shadow: rgba(0, 0, 0, 0.1);
+            --accent-color: #007bff;
+            --accent-hover: #0056b3;
+            --secondary-text: #555;
+            --input-bg: #fff;
+            --input-border: #ccc;
+            --canvas-bg: #eee;
+        }
+
         body {
             margin: 0;
             padding: 20px;
-            background-color: #111;
-            color: #fff;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         h1 {
@@ -39,17 +70,18 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: #222;
+            background: var(--panel-bg);
             padding: 10px;
             border-radius: 10px;
-            border: 2px solid #444;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--panel-border);
+            box-shadow: 0 0 20px var(--panel-shadow);
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         .panel h2 {
             margin: 0 0 10px 0;
             font-size: 18px;
-            color: #ccc;
+            color: var(--secondary-text);
         }
 
         .canvas-wrapper {
@@ -62,7 +94,7 @@
         canvas {
             width: 100%;
             height: 100%;
-            background: #000;
+            background: var(--canvas-bg);
             border-radius: 4px;
         }
 
@@ -87,6 +119,8 @@
             font-size: 20px;
             font-weight: bold;
             text-shadow: 2px 2px 0 #000;
+            color: #fff;
+            /* Always white on game canvas */
         }
 
         .hud-bottom {
@@ -94,6 +128,7 @@
             font-size: 16px;
             text-shadow: 1px 1px 0 #000;
             color: #aaa;
+            /* Always light on game canvas */
         }
 
         #status-msg {
@@ -108,11 +143,13 @@
             pointer-events: auto;
             z-index: 10;
             width: 80%;
+            color: #fff;
+            /* Always white text in overlay */
         }
 
         button {
-            background: #00d2ff;
-            color: #000;
+            background: var(--accent-color);
+            color: #fff;
             border: none;
             padding: 8px 16px;
             font-size: 16px;
@@ -120,10 +157,11 @@
             cursor: pointer;
             border-radius: 5px;
             margin-top: 10px;
+            transition: background-color 0.3s;
         }
 
         button:hover {
-            background: #33e0ff;
+            background: var(--accent-hover);
         }
 
         button:disabled {
@@ -136,15 +174,17 @@
             display: flex;
             gap: 20px;
             align-items: center;
-            background: #222;
+            background: var(--panel-bg);
             padding: 15px;
             border-radius: 10px;
-            border: 1px solid #444;
+            border: 1px solid var(--panel-border);
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         label {
             font-size: 14px;
-            color: #ccc;
+            color: var(--secondary-text);
             display: flex;
             align-items: center;
             gap: 5px;
@@ -157,9 +197,9 @@
         input[type=text] {
             padding: 5px;
             border-radius: 4px;
-            border: 1px solid #555;
-            background: #333;
-            color: #fff;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-color);
         }
     </style>
 </head>
@@ -223,6 +263,7 @@
         <button id="webcam-btn" onclick="toggleWebcam()">Use Webcam</button>
         <button id="invert-btn" onclick="toggleInvert()" style="background:#ff5500;">Invert Steering: OFF</button>
         <button id="skeleton-btn" onclick="toggleSkeleton()">Show Skeleton</button>
+        <button id="theme-btn" onclick="toggleTheme()">Theme: Dark</button>
         <label>
             Sensitivity: <input type="range" id="sensitivity" min="2" max="20" value="8"> <span
                 id="sens-val">8&deg;</span>
@@ -252,6 +293,7 @@
         let gameLoopId;
         let invertSteering = false;
         let showSkeleton = false;
+        let isDarkMode = true;
 
         // Webcam State
         let useWebcam = false;
@@ -280,6 +322,7 @@
         const skeletonCanvas = document.getElementById('skeletonCanvas');
         const skeletonCtx = skeletonCanvas.getContext('2d');
         const skeletonBtn = document.getElementById('skeleton-btn');
+        const themeBtn = document.getElementById('theme-btn');
 
         const statusTitle = document.getElementById('status-title');
         const statusText = document.getElementById('status-text');
@@ -367,6 +410,19 @@
             showSkeleton = !showSkeleton;
             skeletonPanel.style.display = showSkeleton ? "flex" : "none";
             skeletonBtn.innerText = showSkeleton ? "Hide Skeleton" : "Show Skeleton";
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.body.classList.remove('light-mode');
+                themeBtn.innerText = "Theme: Dark";
+                themeBtn.style.background = "#00d2ff";
+            } else {
+                document.body.classList.add('light-mode');
+                themeBtn.innerText = "Theme: Light";
+                themeBtn.style.background = "#007bff";
+            }
         }
 
         // ==========================================

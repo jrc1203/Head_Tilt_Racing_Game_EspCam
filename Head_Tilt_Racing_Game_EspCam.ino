@@ -12,8 +12,8 @@
 #include "camera_pins.h"
 
 // WIFI CREDENTIALS (EDIT THESE!)
-const char *ssid = "YOUR_WIFI_NAME";
-const char *password = "YOUR_WIFI_PASSWORD";
+const char *ssid = "JOYRC";
+const char *password = "joyrc000";
 
 // Web Server on port 80
 WebServer server(80);
