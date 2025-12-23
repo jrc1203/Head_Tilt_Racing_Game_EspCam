@@ -11,6 +11,9 @@
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
+// Flash LED Pin (GPIO 4 on AI Thinker)
+#define FLASH_LED_PIN 4
+
 // WIFI CREDENTIALS (EDIT THESE!)
 const char *ssid = "JOYRC";
 const char *password = "joyrc000";
@@ -99,6 +102,24 @@ void handleCapture() {
   esp_camera_fb_return(fb);
 }
 
+void handleFlash() {
+  // Get the 'state' parameter (on or off)
+  if (server.hasArg("state")) {
+    String state = server.arg("state");
+    if (state == "on") {
+      digitalWrite(FLASH_LED_PIN, HIGH);
+      server.send(200, "text/plain", "Flash ON");
+    } else if (state == "off") {
+      digitalWrite(FLASH_LED_PIN, LOW);
+      server.send(200, "text/plain", "Flash OFF");
+    } else {
+      server.send(400, "text/plain", "Invalid state. Use 'on' or 'off'");
+    }
+  } else {
+    server.send(400, "text/plain", "Missing 'state' parameter");
+  }
+}
+
 // ==========================================
 // MAIN SETUP & LOOP
 // ==========================================
@@ -109,6 +130,10 @@ void setup() {
   Serial.println();
 
   setupCamera();
+
+  // Setup Flash LED
+  pinMode(FLASH_LED_PIN, OUTPUT);
+  digitalWrite(FLASH_LED_PIN, LOW); // Start with flash off
 
   // Connect to WiFi
   WiFi.mode(WIFI_STA);
@@ -135,9 +160,26 @@ void setup() {
 
   server.on("/", handleRoot);
   server.on("/capture", handleCapture);
+  server.on("/flash", handleFlash);
 
   server.begin();
   Serial.println("HTTP server started");
 }
 
-void loop() { server.handleClient(); }
+// Blink the flash LED every 500 ms
+unsigned long previousMillis = 0;
+const long ledInterval = 500; // milliseconds
+bool ledState = false;
+
+void loop() {
+  // Handle incoming HTTP requests
+  server.handleClient();
+
+  // LED flashing logic
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= ledInterval) {
+    previousMillis = currentMillis;
+    ledState = !ledState;
+    digitalWrite(FLASH_LED_PIN, ledState ? HIGH : LOW);
+  }
+}
