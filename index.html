@@ -291,12 +291,12 @@
         let isGameRunning = false;
         let score = 0;
         let gameLoopId;
-        let invertSteering = false;
+        let invertSteering = true;
         let showSkeleton = false;
         let isDarkMode = true;
 
         // Webcam State
-        let useWebcam = false;
+        let useWebcam = true;
         const videoElement = document.createElement('video');
         videoElement.autoplay = true;
         videoElement.playsInline = true;
@@ -721,6 +721,17 @@
         }
 
         init();
+                // Set initial button states to match defaults
+        invertBtn.innerText = "Invert Steering: ON";
+        invertBtn.style.background = "#00ff00";
+        invertBtn.style.color = "#000";
+        
+        webcamBtn.innerText = "Use ESP32";
+        webcamBtn.style.background = "#ff9900";
+        ipInput.disabled = true;
+        
+        // Auto-enable webcam on load
+        toggleWebcam();
 
     </script>
 </body>
